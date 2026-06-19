@@ -1,0 +1,13 @@
+# Pegasus-AI MCP サーバの実行に必要な依存
+mcp>=1.0.0
+pandas>=2.0
+beautifulsoup4>=4.12
+lxml>=5.0
+requests>=2.31
+
+# 予測系ツール（train_model / predict_win_rate）を使う場合のみ追加で必要
+# lightgbm>=4.0
+# scikit-learn>=1.3
+
+# テスト用
+pytest>=7.0
