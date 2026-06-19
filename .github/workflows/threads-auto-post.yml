@@ -1,0 +1,61 @@
+name: Threads 自動投稿（週末レース結果）
+
+on:
+  # 土日の日本時間 17:30（最終レース後）に実行
+  # UTC: 08:30 = JST 17:30
+  schedule:
+    - cron: "30 8 * * 6"  # 土曜 JST 17:30
+    - cron: "30 8 * * 0"  # 日曜 JST 17:30
+  # 手動実行（テスト用）
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "対象日 (YYYYMMDD)。空なら当日。"
+        required: false
+      dry_run:
+        description: "投稿せずテキストのみ出力"
+        type: boolean
+        default: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: pegasus-mcp をチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Pegasus-ai をチェックアウト
+        uses: actions/checkout@v4
+        with:
+          repository: michirum10/Pegasus-ai
+          path: Pegasus-ai
+          token: ${{ secrets.PEGASUS_AI_TOKEN }}
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 依存インストール
+        run: |
+          pip install -r requirements.txt
+          # Pegasus-ai 側の依存もインストール
+          if [ -f Pegasus-ai/requirements.txt ]; then
+            pip install -r Pegasus-ai/requirements.txt
+          fi
+
+      - name: Threads に投稿
+        env:
+          PEGASUS_AI_ROOT: ${{ github.workspace }}/Pegasus-ai
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ inputs.date }}"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python threads_poster.py $ARGS
